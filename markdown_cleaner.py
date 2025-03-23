@@ -232,10 +232,11 @@ def force_remove_all_stars_and_underscores(text, options):
                 # Careful replace of underscores to avoid generating unwanted characters
                 lines[i] = lines[i].replace('_', '')
     
-    # Additional cleanup to remove any unwanted characters that might be created
-    # This specifically targets euro signs and other characters that might be created
+    # Join the lines back to create the final text
     text = '\n'.join(lines)
-    text = re.sub(r'€', '', text)  # Remove euro signs
+    
+    # Let the clean_unwanted_characters function handle character cleanup
+    # rather than targeting specific characters here
     
     return text
 
@@ -253,12 +254,23 @@ def clean_unwanted_characters(text):
     if not text:
         return text
     
+    # Normalize apostrophes and quotes to standard ASCII versions
+    text = text.replace('\u2018', "'")  # Left single quotation mark
+    text = text.replace('\u2019', "'")  # Right single quotation mark
+    text = text.replace('\u201C', '"')  # Left double quotation mark
+    text = text.replace('\u201D', '"')  # Right double quotation mark
+    
+    # Handle em dashes and ellipses
+    text = text.replace('\u2013', '-')   # En dash
+    text = text.replace('\u2014', '--')  # Em dash
+    text = text.replace('\u2026', '...') # Ellipsis
+    
     # Common spurious characters that might be introduced
-    unwanted_chars = ['€', '¢', '¥', '£', '¤']
+    unwanted_chars = ['â‚¬', 'Â¢', 'Â¥', 'Â£', 'Â¤', '\u00A0']
     
     # Remove each unwanted character
     for char in unwanted_chars:
-        text = text.replace(char, '')
+        text = text.replace(char, ' ' if char == '\u00A0' else '')
     
     # Use regex to catch any other unusual characters that might be created
     # Only keep standard ASCII printable characters, newlines, and common Unicode
@@ -283,12 +295,42 @@ def is_common_unicode(char):
     if 160 <= code_point <= 255:
         return True
     
-    # Latin Extended-A: 256-383
-    if 256 <= code_point <= 383:
+    # Latin Extended-A, B: 256-591
+    if 256 <= code_point <= 591:
         return True
     
-    # Common symbols, punctuation, etc.
-    if 8200 <= code_point <= 8230:  # Various spaces, dashes, etc.
+    # Common Unicode blocks
+    common_unicode_ranges = [
+        (0x2000, 0x206F),  # General Punctuation
+        (0x2200, 0x22FF),  # Mathematical Operators
+        (0x25A0, 0x25FF),  # Geometric Shapes
+        (0x2600, 0x26FF),  # Miscellaneous Symbols
+        (0x0370, 0x03FF),  # Greek and Coptic
+        (0x0400, 0x04FF),  # Cyrillic
+        (0x0590, 0x05FF),  # Hebrew
+        (0x0600, 0x06FF),  # Arabic
+        (0x3040, 0x309F),  # Hiragana
+        (0x30A0, 0x30FF),  # Katakana
+    ]
+    
+    for start, end in common_unicode_ranges:
+        if start <= code_point <= end:
+            return True
+    
+    # Explicitly allow common symbols and punctuation
+    explicitly_included = [
+        '\u00A0',            # Non-breaking space
+        '\u00B0',            # Degree sign
+        '\u00B1',            # Plus-minus sign
+        '\u00D7',            # Multiplication sign
+        '\u00F7',            # Division sign
+        '\u2018', '\u2019',  # Left and right single quotation marks
+        '\u201C', '\u201D',  # Left and right double quotation marks
+        '\u2013', '\u2014',  # En dash and em dash
+        '\u2026',            # Ellipsis
+    ]
+    
+    if char in explicitly_included:
         return True
     
     return False
@@ -483,7 +525,7 @@ def identify_markdown_elements(text):
         html_text,
         flags=re.MULTILINE
     )
-    
+
     # Horizontal rules
     html_text = re.sub(
         r'^(\*{3,}|-{3,}|_{3,})$',
@@ -549,3 +591,4 @@ def clean_markdown():
 
 if __name__ == "__main__":
     clean_markdown()
+     
