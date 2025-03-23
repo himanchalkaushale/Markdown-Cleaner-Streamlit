@@ -1,6 +1,5 @@
 import streamlit as st
 from markdown_cleaner import remove_markdown_formatting
-import re
 
 # Set page config
 st.set_page_config(
@@ -67,7 +66,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     remove_headers = st.checkbox("Headers (# Title)", value=True)
-    remove_bold_italic = st.checkbox("Bold and Italic (**bold**, *italic*)", value=False)  # Default to False to keep bold/italic
+    remove_bold_italic = True  # Always apply bold and italic removal
     remove_code = st.checkbox("Code Blocks (```code```)", value=True)
 
 with col2:
@@ -83,7 +82,7 @@ with col3:
 # Create a formatting options dictionary
 formatting_options = {
     'headers': remove_headers,
-    'bold_italic': remove_bold_italic,
+    'bold_italic': remove_bold_italic,  # Always True
     'code_blocks': remove_code,
     'links': remove_links,
     'images': remove_images,
@@ -122,48 +121,20 @@ if markdown_text and ('show_result' in st.session_state and st.session_state.sho
         # Use JavaScript to copy to clipboard
         js = f"""
         <script>
-        navigator.clipboard.writeText({repr(cleaned_text)}).then(function() {{
-            document.getElementById('success-message').style.display = 'block';
+        navigator.clipboard.writeText({repr(cleaned_text)}). then (function() {{
+            alert('Cleaned text copied to clipboard!');
         }});
         </script>
-        <div id="success-message" style="display: none; color: green;">Text copied to clipboard!</div>
         """
         st.markdown(js, unsafe_allow_html=True)
-        st.success("Text copied!")
-    
-    # Show a download button in the second column
-    download_btn = copy_col2.download_button(
-        label="Download as Text File",
-        data=cleaned_text,
-        file_name="cleaned_text.txt",
-        mime="text/plain"
-    )
-    
-elif markdown_text:
-    st.info("Click the 'Clean Markdown' button to process your text.")
-else:
-    st.warning("Please enter some markdown text to clean.")
 
-# Add information about the features
-with st.expander("About this tool"):
-    st.markdown("""
-    ### Markdown Cleaner for AI-Generated Text
-    
-    This tool helps you clean up markdown formatting from text, especially useful for AI-generated answers. 
-    
-    #### How to use:
-    1. Paste your markdown text in the input area
-    2. Select which formatting elements you want to remove using the checkboxes
-    3. Click "Clean Markdown" to process the text
-    4. Copy or download the cleaned result
-    
-    #### Benefits:
-    - Selectively remove only the formatting elements you don't want
-    - Preserves original text layout, spacing, and indentation
-    - Perfect for cleaning up AI assistant responses while keeping the content intact
-    - Easy to use with a simple, intuitive interface
-    """)
-
-# Footer
-st.markdown("---")
-st.markdown("Made with ❤️ using Streamlit and Python by Himanchal Kaushale")
+    # Provide a download button for the cleaned text
+    if st.button("Download Cleaned Text"):
+        # Create a download link for the cleaned text
+        cleaned_text_bytes = cleaned_text.encode('utf-8')
+        st.download_button(
+            label="Download",
+            data=cleaned_text_bytes,
+            file_name="cleaned_text.txt",
+            mime="text/plain"
+        )
